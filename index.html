@@ -1,0 +1,68 @@
+<html>
+	<head>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	</head>
+	<body>
+		<script>
+			var web_audio_context;
+			var source = null;
+			var buffers=[];
+			var playlist = ["mymusic", "mymusic2"];
+			
+			//var audioBuffer = null;
+            $(document).ready(function () {
+    			if (typeof AudioContext !== "undefined"){
+    				web_audio_context = new AudioContext();
+    				console.log("Created AudioContext");
+    			}
+    			else if (typeof webkitAudioContext !== "undefined"){
+    				web_audio_context = new webkitAudioContext();
+    				console.log("Created webkitAudioContext");
+    			}
+    			else{
+    				console.log("Web Audio API does not appear to be supported");
+    				return;
+    			}
+    			
+    			
+    			for(var i=0; i<playlist.length; i++){
+	    			var xhr = new XMLHttpRequest();
+					var url = 'audioloader.php?id='+playlist[i];
+					xhr.open('GET', url, true);
+					xhr.responseType = 'arraybuffer';
+					(function(i) {
+						xhr.onload = function(e) {
+							initSound(playlist[i],this.response); // this.response is an ArrayBuffer.
+						};
+					})(i);
+					xhr.send();
+				}
+				
+				function initSound(index, arrayBuffer) {
+				    
+					web_audio_context.decodeAudioData(arrayBuffer, function(buffer) {
+						buffers[index] = buffer;
+					
+					}, function(e) {
+						console.log('Error decoding file', e);
+					}); 
+				}
+    		});
+    		
+				
+			function playSound(index) {
+				source = web_audio_context.createBufferSource();
+				source.buffer = buffers[index];
+				source.loop = false;
+				var gain = web_audio_context.createGain();
+                source.connect(gain);
+                gain.gain.value = .1;
+                gain.connect(web_audio_context.destination);
+
+				source.connect(web_audio_context.destination);
+				source.start(0); // Play immediately.
+    		}
+
+		</script>
+	</body>
+</html>
